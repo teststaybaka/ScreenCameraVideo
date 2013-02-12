@@ -87,7 +87,7 @@ public:
 		//if (!writer.isOpened()) {
 		//	qDebug()<<"Open writer wrong";
 		//}
-		cameraImg = camera.QueryFrame();
+		cImg = camera.QueryFrame();
 
 		avformat_alloc_output_context2(&oFormatCtx, NULL, "mp4", NULL);
 		if (!oFormatCtx) {
@@ -111,8 +111,8 @@ public:
 			avcodec_get_context_defaults3(videoSt->codec, oCodec);
 			videoSt->codec->codec_id = ofmt->video_codec;
 			videoSt->codec->bit_rate = 400000;
-			videoSt->codec->width = frameWidth;
-			videoSt->codec->height = frameHeight;
+			videoSt->codec->width = screenWidth;
+			videoSt->codec->height = screenHeight;
 			videoSt->codec->time_base.den = fps;
 			videoSt->codec->time_base.num = 1;
 			videoSt->codec->gop_size = 30;
@@ -140,14 +140,14 @@ public:
 		}
 		// Determine required buffer size and allocate buffer
 		avpicture_alloc((AVPicture*)frameYUV, PIX_FMT_YUV420P, 
-							frameWidth, frameHeight);
+							screenWidth, screenHeight);
 		frameYUV->pts = 0;
 		static struct SwsContext *img_convert_ctx;
-		img_convert_ctx = sws_getContext(frameWidth,
-										frameHeight,
+		img_convert_ctx = sws_getContext(screenWidth,
+										screenHeight,
 										PIX_FMT_BGRA,
-										frameWidth,
-										frameHeight,
+										screenWidth,
+										screenHeight,
 										PIX_FMT_YUV420P,
 										SWS_BICUBIC, NULL,
 										NULL,
@@ -170,8 +170,8 @@ public:
 			if (!isStart) break;
 			it1 = QDateTime::currentMSecsSinceEpoch();
 			count++;
-			cameraImg = camera.QueryFrame();
-			if(!cameraImg) {
+			cImg = camera.QueryFrame();
+			if(!cImg) {
 				qWarning() << "Can not get frame from the capture.";
 				break;
 			}
@@ -183,24 +183,18 @@ public:
 				QueueHead = (QueueTail + MAXSIZE - 1)%MAXSIZE;
 				img = ShotImage[QueueHead];
 			}
-			IplImage* cImg = cvCreateImage(cvSize(cameraImg->width, cameraImg->height), cameraImg->depth, img->nChannels);
-			cvCvtColor(cameraImg, cImg, CV_BGR2BGRA);
+			IplImage* cameraImg = cvCreateImage(cvSize(cImg->width, cImg->height), cImg->depth, img->nChannels);
+			cvCvtColor(cImg, cameraImg, CV_BGR2BGRA);
 
-			IplImage* dest = cvCreateImage(cvSize(frameWidth, frameHeight), img->depth, img->nChannels);
-			cvResize(img, dest, CV_INTER_LINEAR);
-			//IplImage* dest = cvCreateImage(cvSize(frameWidth, frameHeight), img->depth, img->nChannels);
-			//cvSetImageROI(dest, cvRect((dest->width - temp->width)/2, (dest->height - temp->height)/2, temp->width, temp->height));
-			//cvCopy(temp, dest);
-			//cvResetImageROI(dest);
-			cvSetImageROI(dest, cvRect(dest->width - cImg->width, dest->height - cImg->height, cImg->width, cImg->height));
-			cvCopy(cImg, dest);
-			cvResetImageROI(dest);
+			cvSetImageROI(img, cvRect(img->width - cameraImg->width, img->height - cameraImg->height, cameraImg->width, cameraImg->height));
+			cvCopy(cameraImg, img);
+			cvResetImageROI(img);
 			//cv::Mat res(dest, 0);
 			//writer<<res;
-			linesize[0] = dest->width*dest->nChannels;
-			data[0] = (uint8_t*)dest->imageData;
+			linesize[0] = img->width*img->nChannels;
+			data[0] = (uint8_t*)img->imageData;
 
-			qint64 s1 = QDateTime::currentMSecsSinceEpoch();
+			//qint64 s1 = QDateTime::currentMSecsSinceEpoch();
 			av_init_packet(&pktV);
 			pktV.data = NULL;
 			pktV.size = 0;
@@ -208,7 +202,7 @@ public:
 						(const uint8_t*  const*)data,
 						linesize,
 						0,
-						frameHeight,
+						screenHeight,
 						frameYUV->data,
 						frameYUV->linesize);
 
@@ -238,14 +232,12 @@ public:
 				exit(1);
 			}
 			frameYUV->pts++;
-			//cvReleaseImage(&temp);
-			cvReleaseImage(&dest);
-			cvReleaseImage(&cImg);
 
-			qint64 s2 = QDateTime::currentMSecsSinceEpoch();
-			qDebug()<<"t "<<s2 - s1;
+			cvReleaseImage(&cameraImg);
+			//qint64 s2 = QDateTime::currentMSecsSinceEpoch();
+			//qDebug()<<s2 - s1;
 			it2 = QDateTime::currentMSecsSinceEpoch();
-			qDebug()<<it2 - it1;
+			qDebug()<<"video: "<<it2 - it1;
 			while(it2 - it1 < 1000/fps) {
 				msleep(1);
 				it2 = QDateTime::currentMSecsSinceEpoch();
@@ -318,7 +310,7 @@ private:
 	int linesize[8];
 	uint8_t *data[8];
 	IplImage* img;
-	IplImage* cameraImg;
+	IplImage* cImg;
 	bool isStart;
 	bool restart;
 	int isColor;

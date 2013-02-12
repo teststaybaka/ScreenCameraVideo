@@ -1,6 +1,6 @@
 #include "MainWidget.h"
 
-IplImage* ShotImage[MAXSIZE];
+IplImage* ShotImage[MAXSIZE] = {0};
 int QueueHead = 0;
 int QueueTail = 0;
 

@@ -1,4 +1,6 @@
 #include "Shot.h"
+#ifdef USE_Dfmirage
+
 const TCHAR Shot::MINIPORT_REGISTRY_PATH[] =
   _T("SYSTEM\\CurrentControlSet\\Hardware Profiles\\")
   _T("Current\\System\\CurrentControlSet\\Services");
@@ -20,10 +22,33 @@ void Shot::open() {
 void Shot::load() {
 	assert(isDriverOpened);
 	if (!isDriverLoaded) {
+		qDebug("Loading mirror driver...");
+
+		WORD drvExtraSaved = deviceMode.dmDriverExtra;
+		// IMPORTANT: we dont touch extension data and size
+		memset(&deviceMode, 0, sizeof(DEVMODE));
+		// m_deviceMode.dmSize = sizeof(m_deviceMode);
+		deviceMode.dmSize = sizeof(DEVMODE);
+		// 2005.10.07
+		deviceMode.dmDriverExtra = drvExtraSaved;
+
+		deviceMode.dmPelsWidth = screenWidth;
+		deviceMode.dmPelsHeight = screenHeight;
+		deviceMode.dmBitsPerPel = 8*nChannels;
+		deviceMode.dmPosition.x = 0;
+		deviceMode.dmPosition.y = 0;
+
+		deviceMode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH |
+								DM_PELSHEIGHT | DM_POSITION;
+
+		deviceMode.dmDeviceName[0] = '\0';
+
 		setAttachToDesktop(true);
+		commitDisplayChanges(&deviceMode);
+
 		driverDC = CreateDC(deviceInfo.DeviceName, 0, 0, 0);
 		if (!driverDC) {
-			qDebug()<<"Can't create device context on mirror driver";
+			qDebug()<<"Can't create device context on mirror driver; devicName:"<<QString::fromWCharArray(deviceInfo.DeviceName);
 			return;
 		}
 		qDebug()<<"Device context is created";
@@ -41,6 +66,47 @@ void Shot::setAttachToDesktop(bool value)
 		return;
 	}
 	isDriverAttached = value;
+}
+
+void Shot::commitDisplayChanges(DEVMODE *pdm)
+{
+  // MSDN: Passing NULL for the lpDevMode parameter and 0 for the
+  // dwFlags parameter is the easiest way to return to the default
+  // mode after a dynamic mode change.
+  // But the "default mode" does not mean that the driver is
+  // turned off. Especially, when a OS was turned off with turned on driver.
+  // (The driver is deactivated but a default mode is saved as was in
+  // previous session)
+
+  // 2005.05.21
+  // PRB: XP does not work with the parameters:
+  // ChangeDisplaySettingsEx(m_deviceInfo.DeviceName, pdm, NULL,
+  //                         CDS_UPDATEREGISTRY, NULL)
+  // And the 2000 does not work with DEVMODE that has the set DM_POSITION bit.
+	qDebug()<<"commitDisplayChanges(1): "<< QString::fromWCharArray(deviceInfo.DeviceName);
+  if (pdm) {
+    LONG code = ChangeDisplaySettingsEx(deviceInfo.DeviceName, pdm, 0, (CDS_UPDATEREGISTRY | CDS_RESET|CDS_GLOBAL), 0);
+    if (code < 0) {
+      qDebug("1st ChangeDisplaySettingsEx() failed with code %d",
+                     (int)code);
+      return;
+    }
+	qDebug()<<"CommitDisplayChanges(2): "<< QString::fromWCharArray(deviceInfo.DeviceName);
+    code = ChangeDisplaySettingsEx(deviceInfo.DeviceName, pdm, 0, 0, 0);
+    if (code < 0) {
+      qDebug("2nd ChangeDisplaySettingsEx() failed with code %d",
+                     (int)code);
+      return;
+    }
+  } else {
+    LONG code = ChangeDisplaySettingsEx(deviceInfo.DeviceName, 0, 0, 0, 0);
+    if (code < 0) {
+      qDebug("ChangeDisplaySettingsEx() failed with code %d",
+                     (int)code);
+      return;
+    }
+  }
+  qDebug("ChangeDisplaySettingsEx() was successfull");
 }
 
 void Shot::connect() {
@@ -94,7 +160,7 @@ void Shot::openDeviceRegKey(TCHAR *miniportName)
 		}
 	}
 
-	qDebug()<<"Opening registry key "<<MINIPORT_REGISTRY_PATH<<"\\"<<miniportName<<"\\"<<subKey.getString();
+	qDebug()<<"Opening registry key "<<QString::fromWCharArray(MINIPORT_REGISTRY_PATH)<<"\\"<<QString::fromWCharArray(miniportName)<<"\\"<<QString::fromWCharArray(subKey.getString());
 
 	RegistryKey regKeyServices(HKEY_LOCAL_MACHINE, MINIPORT_REGISTRY_PATH, true);
 	RegistryKey regKeyDriver(&regKeyServices, miniportName, true);
@@ -121,18 +187,18 @@ void Shot::dispose()
 
 void Shot::disconnect() {
 	qDebug() << "Try to disconnect the mirror driver.";
-  if (isDriverConnected) {
+	if (isDriverConnected) {
 		GETCHANGESBUF buf;
 		buf.buffer = changesBuffer;
 		buf.Userbuffer = screenBuffer;
 
-    int res = ExtEscape(driverDC, dmf_esc_usm_pipe_unmap, sizeof(buf), (LPSTR)&buf, 0, 0);
-    if (res <= 0) {
-      qDebug()<<"Can't unmap buffer: error code = "<<res;
-	  return;
-    }
-    isDriverConnected = false;
-  }
+		int res = ExtEscape(driverDC, dmf_esc_usm_pipe_unmap, sizeof(buf), (LPSTR)&buf, 0, 0);
+		if (res <= 0) {
+			qDebug()<<"Can't unmap buffer: error code = "<<res;
+			return;
+		}
+			isDriverConnected = false;
+	}
 }
 
 void Shot::unload() {
@@ -153,3 +219,5 @@ void Shot::close() {
 	regkeyDevice.close();
 	isDriverOpened = false;
 }
+
+#endif
