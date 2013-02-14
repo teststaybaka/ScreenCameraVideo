@@ -19,10 +19,11 @@ extern "C" {
 }
 #endif
 
+#include "Shot.h"
 #include "CameraDS.h"
 #include <iostream>
-#include "highgui.h"
-#include "cv.h"
+#include <highgui.h>
+#include <cv.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <qapplication.h>
@@ -30,290 +31,37 @@ extern "C" {
 #include <qthread.h>
 #include <qdatetime.h>
 #include <qdebug.h>
-#include <qimage.h>
-#include <qcolor.h>
 #include <qtimer.h>
 #include <qmessagebox.h>
-#include <qchar.h>
 #include <qstring.h>
 #include <stdlib.h>
-#include <string>
 #include <opencv2\highgui\highgui.hpp>
 #include <opencv2\core\core.hpp>
+#include <QtMultimedia/qaudioinput.h>
+#include <QtMultimedia/qaudiooutput.h>
+#include <QtMultimedia/qaudioformat.h>
+#include <QtMultimedia/qaudiodeviceinfo.h>
 
 #define fourcc 1145656920
 #define fraction 4000
-
-#define MAXSIZE 5
-extern IplImage* ShotImage[MAXSIZE];
-extern int QueueHead;
-extern int QueueTail;
 
 class Video: public QThread
 {
 	Q_OBJECT
 
-public:
-	Video(QObject *parent = NULL) : QThread(parent) 
-	{
-		memset(linesize, 0, sizeof(int)*8);
-		memset(data, 0, sizeof(uint8_t*)*8);
-		oFormatCtx = 0;
-		oCodec = 0;
-		o2Codec = 0;
-		frameYUV = 0;
-		frameAUD = 0;
-		outFile = new char[100];
-		count = 0;
-		fps = 25;
-		isColor = 1;
-		isStart = false;
-		restart = false;
-		screenWidth = QApplication::desktop()->width();
-		screenHeight = QApplication::desktop()->height();
-		if(!camera.OpenCamera(0, false, 320, 240)) {
-			qDebug()<<"Open camera error";
-		}
-		//initial ffmpeg
-		av_register_all();
-		avcodec_register_all();
-	}
-
-	void run() {
-		dateTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss-zzz").append(".mp4");
-		QByteArray routeFull = dateTime.toLocal8Bit();
-		outFile = routeFull.data();
-		//writer.open("test.avi", fourcc/*CV_FOURCC('P','I','M','1')*/, fps, cvSize(screenWidth, screenHeight), true);
-		//if (!writer.isOpened()) {
-		//	qDebug()<<"Open writer wrong";
-		//}
-		cImg = camera.QueryFrame();
-
-		avformat_alloc_output_context2(&oFormatCtx, NULL, "mp4", NULL);
-		if (!oFormatCtx) {
-			fprintf(stderr, "Memory error\n");
-			exit(1);
-		}
-		ofmt = oFormatCtx->oformat;
-		videoSt = NULL;
-		audioSt = NULL;
-		if (ofmt->video_codec != CODEC_ID_NONE) {
-			oCodec = avcodec_find_encoder(ofmt->video_codec);
-			if (!oCodec) {
-				fprintf(stderr, "oCodec not found\n");
-				exit(1);
-			}
-			videoSt = avformat_new_stream(oFormatCtx, oCodec);
-			if (!videoSt) {
-				fprintf(stderr, "Could not alloc stream\n");
-				exit(1);
-			}
-			avcodec_get_context_defaults3(videoSt->codec, oCodec);
-			videoSt->codec->codec_id = ofmt->video_codec;
-			videoSt->codec->bit_rate = 400000;
-			videoSt->codec->width = screenWidth;
-			videoSt->codec->height = screenHeight;
-			videoSt->codec->time_base.den = fps;
-			videoSt->codec->time_base.num = 1;
-			videoSt->codec->gop_size = 30;
-			videoSt->codec->pix_fmt = PIX_FMT_YUV420P;
-			videoSt->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
-		}
-		if (videoSt) {
-			if (avcodec_open2(videoSt->codec, oCodec, NULL) < 0) {
-				fprintf(stderr, "could not open video codec\n");
-				exit(1);
-			}
-		}
-		if (!(ofmt->flags & AVFMT_NOFILE)) {
-			if (avio_open(&oFormatCtx->pb, outFile, AVIO_FLAG_WRITE) < 0) {
-				printf("Could not open '%s'\n", outFile);
-				exit(1);
-			}
-		}
-		avformat_write_header(oFormatCtx, NULL);
-		
-		frameYUV = avcodec_alloc_frame();
-		if(frameYUV==NULL) {
-			qDebug()<<"alloc frame failed";
-			exit(1);
-		}
-		// Determine required buffer size and allocate buffer
-		avpicture_alloc((AVPicture*)frameYUV, PIX_FMT_YUV420P, 
-							screenWidth, screenHeight);
-		frameYUV->pts = 0;
-		static struct SwsContext *img_convert_ctx;
-		img_convert_ctx = sws_getContext(screenWidth,
-										screenHeight,
-										PIX_FMT_BGRA,
-										screenWidth,
-										screenHeight,
-										PIX_FMT_YUV420P,
-										SWS_BICUBIC, NULL,
-										NULL,
-										NULL);
-		if (img_convert_ctx == NULL) {
-			qDebug()<<"Cannot initialize the conversion context\n";
-		}
-
-		count = 0;
-		restart = false;
-		isStart = true;
-		t1 = QDateTime::currentMSecsSinceEpoch();
-		qint64 it1, it2;
-		qDebug()<<"start";
-		while (true) {
-			if (count > fraction) {
-				restart = true;
-				isStart = false;
-			}
-			if (!isStart) break;
-			it1 = QDateTime::currentMSecsSinceEpoch();
-			count++;
-			cImg = camera.QueryFrame();
-			if(!cImg) {
-				qWarning() << "Can not get frame from the capture.";
-				break;
-			}
-			
-			while(QueueHead == QueueTail) {
-				msleep(1);
-			}
-			if(QueueHead != QueueTail) {
-				QueueHead = (QueueTail + MAXSIZE - 1)%MAXSIZE;
-				img = ShotImage[QueueHead];
-			}
-			IplImage* cameraImg = cvCreateImage(cvSize(cImg->width, cImg->height), cImg->depth, img->nChannels);
-			cvCvtColor(cImg, cameraImg, CV_BGR2BGRA);
-
-			cvSetImageROI(img, cvRect(img->width - cameraImg->width, img->height - cameraImg->height, cameraImg->width, cameraImg->height));
-			cvCopy(cameraImg, img);
-			cvResetImageROI(img);
-			//cv::Mat res(dest, 0);
-			//writer<<res;
-			linesize[0] = img->width*img->nChannels;
-			data[0] = (uint8_t*)img->imageData;
-
-			//qint64 s1 = QDateTime::currentMSecsSinceEpoch();
-			av_init_packet(&pktV);
-			pktV.data = NULL;
-			pktV.size = 0;
-			sws_scale(img_convert_ctx,
-						(const uint8_t*  const*)data,
-						linesize,
-						0,
-						screenHeight,
-						frameYUV->data,
-						frameYUV->linesize);
-
-			ret = avcodec_encode_video2(videoSt->codec, &pktV, frameYUV, &got_output);
-			if (ret < 0) {
-				fprintf(stderr, "error encoding frame\n");
-				exit(1);
-			}
-			pktV.stream_index = videoSt->index;
-			/* If size is zero, it means the image was buffered. */
-			if (got_output) {
-				if (pktV.pts != AV_NOPTS_VALUE)
-					pktV.pts = av_rescale_q(pktV.pts, videoSt->codec->time_base, videoSt->time_base);
-				if (pktV.dts != AV_NOPTS_VALUE)
-					pktV.dts = av_rescale_q(pktV.dts, videoSt->codec->time_base, videoSt->time_base);
-				if (videoSt->codec->coded_frame->key_frame)
-					pktV.flags |= AV_PKT_FLAG_KEY;
-
-				/* Write the compressed frame to the media file. */
-				ret = av_interleaved_write_frame(oFormatCtx, &pktV);
-				av_free_packet(&pktV);
-			} else {
-				ret = 0;
-			}
-			if (ret != 0) {
-				fprintf(stderr, "Error while writing video frame\n");
-				exit(1);
-			}
-			frameYUV->pts++;
-
-			cvReleaseImage(&cameraImg);
-			//qint64 s2 = QDateTime::currentMSecsSinceEpoch();
-			//qDebug()<<s2 - s1;
-			it2 = QDateTime::currentMSecsSinceEpoch();
-			qDebug()<<"video: "<<it2 - it1;
-			while(it2 - it1 < 1000/fps) {
-				msleep(1);
-				it2 = QDateTime::currentMSecsSinceEpoch();
-			}
-		}
-		//writer.release();
-		got_output = 1;
-		while(got_output) {
-			av_init_packet(&pktV);
-			pktV.data = NULL;
-			pktV.size = 0;
-			ret = avcodec_encode_video2(videoSt->codec, &pktV, NULL, &got_output);
-			if (ret < 0) {
-				fprintf(stderr, "error encoding frame\n");
-				exit(1);
-			}
-			pktV.stream_index = videoSt->index;
-			if (got_output) {
-					/* Write the compressed frame to the media file. */
-					ret = av_interleaved_write_frame(oFormatCtx, &pktV);
-					av_free_packet(&pktV);
-			} else {
-				ret = 0;
-			}
-			if (ret != 0) {
-				fprintf(stderr, "Error while writing video frame\n");
-				exit(1);
-			}
-		}
-
-		av_write_trailer(oFormatCtx);
-		if (videoSt) {
-			avcodec_close(videoSt->codec);
-			av_free(frameYUV->data[0]);
-			av_free(frameYUV);
-		}
-		if (!(ofmt->flags & AVFMT_NOFILE))
-			/* Close the output file. */
-			avio_close(oFormatCtx->pb);
-		av_freep(&oFormatCtx->streams[0]->codec);
-        av_freep(&oFormatCtx->streams[0]);
-		av_free(oFormatCtx);
-		av_free(img_convert_ctx);
-
-		t2 = QDateTime::currentMSecsSinceEpoch();
-		qDebug()<<t2 - t1 <<" "<< count;
-		if (restart) {
-			emit videoRestart();
-		}
-	}
-	void stop() {
-		isStart = false;
-	}
-	void setVideoSize(int width, int height) {
-		frameWidth = width;
-		frameHeight = height;
-	}
-	void setSaveRoute(QString route) {
-		this->route = route;
-	}
-signals:
-	void videoRestart();
 private:
 	CCameraDS camera;
+	Shot shot;
 	int count;
 	qint64 t1;
 	qint64 t2;
 	char* outFile;
-	cv::VideoWriter writer;
 	int linesize[8];
 	uint8_t *data[8];
 	IplImage* img;
 	IplImage* cImg;
 	bool isStart;
 	bool restart;
-	int isColor;
 	double fps;
 	int frameWidth;
 	int frameHeight;
@@ -327,11 +75,167 @@ private:
 	AVPacket pktV, pktA;
 	AVOutputFormat* ofmt;
 	AVStream *audioSt, *videoSt;
+	struct SwsContext *img_convert_ctx;
 	double audioPts, videoPts;
+	QAudioFormat format;
+	QAudioDeviceInfo deviceInfo;
+	QAudioInput* audioInput;
+	QIODevice* device;
 	AVFifoBuffer *fifo;
 	uint8_t* samples;
-	int got_output;
+	int buffer_size;
+	int actual_buffer_size;
+	int got_output, got_packet;
 	int ret;
+
+	void initialStream();
+	void audioStart();
+	void writeOneVideoFrame();
+	void writeOneAudioFrame();
+	void audioStop();
+	void writeVideoEnding();
+	void writeAudioEnding();
+	void releaseStream();
+public:
+	Video(QObject *parent = NULL) : QThread(parent) 
+	{
+		memset(linesize, 0, sizeof(int)*8);
+		memset(data, 0, sizeof(uint8_t*)*8);
+		oFormatCtx = 0;
+		oCodec = 0;
+		o2Codec = 0;
+		frameYUV = 0;
+		frameAUD = 0;
+		fifo = av_fifo_alloc(0);
+		outFile = new char[100];
+		count = 0;
+		fps = 30;
+		isStart = false;
+		restart = false;
+		screenWidth = QApplication::desktop()->width();
+		screenHeight = QApplication::desktop()->height();
+		if(!camera.OpenCamera(0, false, 320, 240)) {
+			qDebug()<<"Open camera error";
+		}
+
+		format.setFrequency(44100);
+		format.setChannels(2);
+		format.setSampleSize(16);
+		format.setCodec("audio/pcm");
+		format.setByteOrder(QAudioFormat::LittleEndian);
+		format.setSampleType(QAudioFormat::SignedInt);
+		
+		//initial ffmpeg
+		av_register_all();
+		avcodec_register_all();
+		img_convert_ctx = sws_getContext(screenWidth,
+										screenHeight,
+										PIX_FMT_BGRA,
+										screenWidth,
+										screenHeight,
+										PIX_FMT_YUV420P,
+										SWS_BICUBIC, NULL,
+										NULL,
+										NULL);
+		if (img_convert_ctx == NULL) {
+			qDebug()<<"Cannot initialize the conversion context\n";
+		}
+	}
+	~Video() {
+		av_fifo_free(fifo);
+		av_free(img_convert_ctx);
+	}
+
+	void run() {
+		dateTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss-zzz").append(".avi");
+		QByteArray routeFull = (route+"\\"+dateTime).toLocal8Bit();
+		outFile = routeFull.data();
+		
+		for (int i = 0; i < 4; i++) {
+			cImg = camera.QueryFrame();
+			img = shot.shot();
+			delete img->imageData;
+			cvReleaseImageHeader(&img);
+		}
+
+		initialStream();
+		audioStart();
+
+		count = 0;
+		restart = false;
+		isStart = true;
+		t1 = QDateTime::currentMSecsSinceEpoch();
+		qDebug()<<"start";
+		while (true) {
+			t2 = QDateTime::currentMSecsSinceEpoch();
+			if (t2 - t1 < 1000/fps*count) {
+				writeOneAudioFrame();
+				msleep(5);
+				continue;
+			}
+			count++;
+			if (count > fraction) {
+				restart = true;
+				isStart = false;
+			}
+			if (!isStart) break;
+			
+			qint64 it1 = QDateTime::currentMSecsSinceEpoch();
+			
+			cImg = camera.QueryFrame();
+			if(!cImg) {
+				qWarning() << "Can not get frame from the capture.";
+				break;
+			}
+			img = shot.shot();
+			if(!img) {
+				qWarning() << "Can not get frame from the mirror driver.";
+				break;
+			}
+			IplImage* cameraImg = cvCreateImage(cvSize(cImg->width, cImg->height), cImg->depth, img->nChannels);
+			cvCvtColor(cImg, cameraImg, CV_BGR2BGRA);
+
+			cvSetImageROI(img, cvRect(img->width - cameraImg->width, img->height - cameraImg->height, cameraImg->width, cameraImg->height));
+			cvCopy(cameraImg, img);
+			cvResetImageROI(img);
+
+			linesize[0] = img->width*img->nChannels;
+			data[0] = (uint8_t*)img->imageData;
+
+			writeOneVideoFrame();
+
+			cvReleaseImage(&cameraImg);
+			delete img->imageData;
+			cvReleaseImageHeader(&img);
+
+			qint64 it2 = QDateTime::currentMSecsSinceEpoch();
+			qDebug()<<"video: "<<it2 - it1;
+		}
+		audioStop();
+		writeVideoEnding();
+		writeAudioEnding();
+		releaseStream();
+		
+
+		t2 = QDateTime::currentMSecsSinceEpoch();
+		qDebug()<<t2 - t1 <<" "<< count;
+		if (restart) emit videoRestart();
+	}
+	void stop() {
+		isStart = false;
+	}
+	void setVideoSize(int width, int height) {
+		frameWidth = width;
+		frameHeight = height;
+	}
+	void setSaveRoute(QString route) {
+		this->route = route;
+	}
+	void setAudioInfo(QAudioDeviceInfo deviceInfo) {
+		this->deviceInfo = deviceInfo;
+	}
+signals:
+	void videoRestart();
 };
 
 #endif //VIDEO_H

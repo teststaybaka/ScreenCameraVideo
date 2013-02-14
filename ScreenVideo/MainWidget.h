@@ -1,10 +1,7 @@
 #ifndef SCREENVIDEO_H
 #define SCREENVIDEO_H
 
-#define _UNICODE_H_
-#include "Audio.h"
 #include "Video.h"
-#include "Shot.h"
 #include <QtGui/QApplication>
 #include <QMainWindow>
 #include <qmessagebox.h>
@@ -50,19 +47,16 @@ class MainWidget : public QMainWindow
 public:
 	MainWidget(QWidget *parent = 0, Qt::WFlags flags = 0):QMainWindow(parent, flags) 
 	{
-		QTextCodec::setCodecForTr(QTextCodec::codecForName("UNICODE"));
+		QTextCodec::setCodecForTr(QTextCodec::codecForName("GB2312"));
 		trayIconInitial();
 		interfaceInitial();
 		registHotKey();
 
 		video = new Video();
-		shot = new Shot();
-		audio = new Audio();
-		isVideoStart = false;
-		isAudioStart = false;
+		isStart = false;
 		connect(routeChangeButton, SIGNAL(clicked()), this, SLOT(changeRoute()));
 		connect(record, SIGNAL(clicked()), this, SLOT(startOrStop()));
-		connect(quit, SIGNAL(clicked()), qApp, SLOT(quit()));
+		connect(quit, SIGNAL(clicked()), this, SLOT(quitApp()));
 		connect(qApp, SIGNAL(hotKey(int, int)), this, SLOT(startOrStop()));
 		connect(video, SIGNAL(videoRestart()), this, SLOT(videoStart()));
 		connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(iconActivated(QSystemTrayIcon::ActivationReason)));
@@ -70,7 +64,7 @@ public:
 		connect(minimizeAction, SIGNAL(triggered()), this, SLOT(hide()));
 		connect(maximizeAction, SIGNAL(triggered()), this, SLOT(showMaximized()));
 		connect(restoreAction, SIGNAL(triggered()), this, SLOT(showNormal()));
-		connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
+		connect(quitAction, SIGNAL(triggered()), this, SLOT(quitApp()));
 	}
 	~MainWidget() {
 		GlobalDeleteAtom(id);
@@ -91,38 +85,24 @@ public slots:
 	}
 	void videoStart() {
 		record->setText(tr("结束录制"));
-		isVideoStart = true;
+		isStart = true;
 		std::pair<int, int> rsl = resolutionList[resolution->currentIndex()];
 		video->setVideoSize(rsl.first, rsl.second);
 		video->setSaveRoute(route->text());
+		video->setAudioInfo(deviceList[audioDevice->currentIndex()]);
 		video->wait();
 		video->start();
-		shot->wait();
-		shot->start();
 	}
 	void videoStop() {
 		record->setText(tr("开始录制"));
-		isVideoStart = false;
+		isStart = false;
 		video->stop();
 		video->wait();
-		shot->stop();
-		shot->wait();
-	}
-	void audioStart()
-	{
-		isAudioStart = true;
-		audio->startRecording();
-	}
-	void audioStop()
-	{
-		isAudioStart = false;
-		audio->stopRecording();
 	}
 	void startOrStop() 
 	{
-		isVideoStart? videoStop(): videoStart();
-		isAudioStart? audioStop(): audioStart();
-		if(isAudioStart == false && isVideoStart == false)
+		isStart? videoStop(): videoStart();
+		if(isStart == false)
 		{
 			//			/	system("E:\\ScreenVideo\\ScreenVideo\\ScreenVideo\\ffmpeg.exe -i E:\\ScreenVideo\\ScreenVideo\\ScreenVideo\\test.avi -i E:\\ScreenVideo\\ScreenVideo\\ScreenVideo\\test.wav -vcodec copy -acodec copy E:\\ScreenVideo\\ScreenVideo\\ScreenVideo\\output.avi");
 			//system("ffmpeg.exe -i test.avi -i test.wav -vcodec copy -acodec copy output.avi");
@@ -136,17 +116,20 @@ public slots:
 			this->showNormal();
 		}
 	}
+	void quitApp() {
+		if (isStart) {
+			videoStop();
+		}
+		qApp->quit();
+	}
 private:
 	void trayIconInitial();
 	void interfaceInitial();
 	void registHotKey();
 
 	int id;
-	bool isVideoStart;
-	bool isAudioStart;
+	bool isStart;
 	Video* video;
-	Audio* audio;
-	Shot* shot;
 	QSystemTrayIcon *trayIcon;
 	QMenu *trayIconMenu; 
 	QAction *recordAction;

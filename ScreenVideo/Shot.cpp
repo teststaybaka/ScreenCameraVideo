@@ -1,5 +1,4 @@
 #include "Shot.h"
-#ifdef USE_Dfmirage
 
 const TCHAR Shot::MINIPORT_REGISTRY_PATH[] =
   _T("SYSTEM\\CurrentControlSet\\Hardware Profiles\\")
@@ -174,15 +173,15 @@ void Shot::openDeviceRegKey(TCHAR *miniportName)
 
 void Shot::dispose()
 {
-  if (isDriverConnected) {
-    disconnect();
-  }
-  if (isDriverLoaded) {
-    unload();
-  }
-  if (isDriverOpened) {
-    close();
-  }
+	if (isDriverConnected) {
+		disconnect();
+	}
+	if (isDriverLoaded) {
+		unload();
+	}
+	if (isDriverOpened) {
+		close();
+	}
 }
 
 void Shot::disconnect() {
@@ -197,7 +196,7 @@ void Shot::disconnect() {
 			qDebug()<<"Can't unmap buffer: error code = "<<res;
 			return;
 		}
-			isDriverConnected = false;
+		isDriverConnected = false;
 	}
 }
 
@@ -219,5 +218,3 @@ void Shot::close() {
 	regkeyDevice.close();
 	isDriverOpened = false;
 }
-
-#endif

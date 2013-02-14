@@ -46,14 +46,14 @@ void MainWidget::interfaceInitial() {
 	audioDevice = new QComboBox(this);
 	deviceList = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
 	foreach(QAudioDeviceInfo deviceInfo, deviceList) {
-		audioDevice->addItem(deviceInfo.deviceName().toUtf8());
+		audioDevice->addItem(deviceInfo.deviceName());
 	}
 	audioDevice->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 
 	QLabel* routeLabel = new QLabel(tr("保存路径:  "), this);
 	routeLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
 	route = new QLineEdit(this);
-	route->setText("\\movies");
+	route->setText("movies");
 	route->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 	route->setReadOnly(true);
 	routeChangeButton = new QPushButton(tr("更改"), this);
