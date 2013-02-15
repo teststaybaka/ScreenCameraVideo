@@ -63,8 +63,6 @@ private:
 	bool isStart;
 	bool restart;
 	double fps;
-	int frameWidth;
-	int frameHeight;
 	int screenWidth;
 	int screenHeight;
 	QString dateTime;
@@ -75,7 +73,7 @@ private:
 	AVPacket pktV, pktA;
 	AVOutputFormat* ofmt;
 	AVStream *audioSt, *videoSt;
-	struct SwsContext *img_convert_ctx;
+	SwsContext *img_convert_ctx;
 	double audioPts, videoPts;
 	QAudioFormat format;
 	QAudioDeviceInfo deviceInfo;
@@ -223,10 +221,6 @@ public:
 	}
 	void stop() {
 		isStart = false;
-	}
-	void setVideoSize(int width, int height) {
-		frameWidth = width;
-		frameHeight = height;
 	}
 	void setSaveRoute(QString route) {
 		this->route = route;

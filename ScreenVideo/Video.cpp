@@ -22,7 +22,7 @@ void Video::initialStream() {
 		}
 		avcodec_get_context_defaults3(videoSt->codec, oCodec);
 		videoSt->codec->codec_id = ofmt->video_codec;
-		videoSt->codec->bit_rate = 1000000;
+		//videoSt->codec->bit_rate = 1000000;
 		videoSt->codec->width = screenWidth;
 		videoSt->codec->height = screenHeight;
 		videoSt->codec->time_base.den = fps;
@@ -43,7 +43,7 @@ void Video::initialStream() {
 			exit(1);
 		}
 		audioSt->id = 1;
-		audioSt->codec->bit_rate = 320000;
+		//audioSt->codec->bit_rate = 320000;
 		audioSt->codec->sample_rate = 44100;
 		audioSt->codec->sample_fmt = AV_SAMPLE_FMT_S16;
 		audioSt->codec->channels = 2;

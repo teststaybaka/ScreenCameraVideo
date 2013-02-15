@@ -26,20 +26,10 @@ void MainWidget::trayIconInitial() {
 void MainWidget::interfaceInitial() {
 	tabWidget = new QTabWidget(this);
 	setCentralWidget(tabWidget);
-	baseSettings = new QWidget(this);
-	advancedSettings = new QWidget(this);
-	tabWidget->addTab(baseSettings, tr("基本设置"));
-	tabWidget->addTab(advancedSettings, tr("高级设置"));
-
-	QLabel* resolutionLabel = new QLabel(tr("录制分辨率:"), this);
-	resolutionLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
-	resolution = new QComboBox(this);
-	resolutionList.append(std::make_pair(1024, 768));
-	resolutionList.append(std::make_pair(1024, 576));
-	for(int i = 0; i < resolutionList.size(); i++) {
-		resolution->addItem(QString("%1 x %2").arg(resolutionList[i].first).arg(resolutionList[i].second));
-	}
-	resolution->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+	recordSettings = new QWidget(this);
+	transcodeSettings = new QWidget(this);
+	tabWidget->addTab(recordSettings, tr("录像设置"));
+	tabWidget->addTab(transcodeSettings, tr("转码设置"));
 
 	QLabel* audioLabel = new QLabel(tr("录音设备:  "), this);
 	audioLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
@@ -52,8 +42,7 @@ void MainWidget::interfaceInitial() {
 
 	QLabel* routeLabel = new QLabel(tr("保存路径:  "), this);
 	routeLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
-	route = new QLineEdit(this);
-	route->setText("movies");
+	route = new QLineEdit(tr("movies"), this);
 	route->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 	route->setReadOnly(true);
 	routeChangeButton = new QPushButton(tr("更改"), this);
@@ -68,25 +57,74 @@ void MainWidget::interfaceInitial() {
 	quit->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
 	QHBoxLayout* hBox1 = new QHBoxLayout(this);
-	hBox1->addWidget(resolutionLabel);
-	hBox1->addWidget(resolution);
+	hBox1->addWidget(audioLabel);
+	hBox1->addWidget(audioDevice);
 	QHBoxLayout* hBox2 = new QHBoxLayout(this);
-	hBox2->addWidget(audioLabel);
-	hBox2->addWidget(audioDevice);
+	hBox2->addWidget(routeLabel);
+	hBox2->addWidget(route);
+	hBox2->addWidget(routeChangeButton);
 	QHBoxLayout* hBox3 = new QHBoxLayout(this);
-	hBox3->addWidget(routeLabel);
-	hBox3->addWidget(route);
-	hBox3->addWidget(routeChangeButton);
-	QHBoxLayout* hBox4 = new QHBoxLayout(this);
-	hBox4->addSpacerItem(spacer);
-	hBox4->addWidget(record);
-	hBox4->addWidget(quit);
+	hBox3->addSpacerItem(spacer);
+	hBox3->addWidget(record);
+	hBox3->addWidget(quit);
 	QVBoxLayout* vBox = new QVBoxLayout(this);
 	vBox->addLayout(hBox1);
 	vBox->addLayout(hBox2);
 	vBox->addLayout(hBox3);
-	vBox->addLayout(hBox4);
-	baseSettings->setLayout(vBox);
+	recordSettings->setLayout(vBox);
+
+	QLabel* resolutionLabel = new QLabel(tr("分辨率:    "), this);
+	resolutionLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
+	resolution = new QComboBox(this);
+	resolutionList.append(std::make_pair(1024, 768));
+	resolutionList.append(std::make_pair(1024, 576));
+	resolutionList.append(std::make_pair(480, 320));
+	for(int i = 0; i < resolutionList.size(); i++) {
+		resolution->addItem(QString("%1 x %2").arg(resolutionList[i].first).arg(resolutionList[i].second));
+	}
+	resolution->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+
+	QLabel* srcRouteLabel = new QLabel(tr("源文件:    "), this);
+	srcRouteLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
+	srcRoute = new QLineEdit(this);
+	srcRoute->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+	srcRoute->setReadOnly(true);
+	srcRouteChange = new QPushButton(tr("更改"), this);
+	srcRouteChange->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+
+	QLabel* dstRouteLabel = new QLabel(tr("目标文件:  "), this);
+	dstRouteLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
+	dstRoute = new QLineEdit(this);
+	dstRoute->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+	dstRoute->setReadOnly(true);
+	dstRouteChange = new QPushButton(tr("更改"), this);
+	dstRouteChange->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+
+	progressBar = new QProgressBar(this);
+	progressBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	transcodeStart = new QPushButton(tr("开始转码"), this);
+	transcodeStart->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+
+	QHBoxLayout* hBoxT1 = new QHBoxLayout(this);
+	hBoxT1->addWidget(resolutionLabel);
+	hBoxT1->addWidget(resolution);
+	QHBoxLayout* hBoxT2 = new QHBoxLayout(this);
+	hBoxT2->addWidget(srcRouteLabel);
+	hBoxT2->addWidget(srcRoute);
+	hBoxT2->addWidget(srcRouteChange);
+	QHBoxLayout* hBoxT3 = new QHBoxLayout(this);
+	hBoxT3->addWidget(dstRouteLabel);
+	hBoxT3->addWidget(dstRoute);
+	hBoxT3->addWidget(dstRouteChange);
+	QHBoxLayout* hBoxT4 = new QHBoxLayout(this);
+	hBoxT4->addWidget(progressBar);
+	hBoxT4->addWidget(transcodeStart);
+	QVBoxLayout* vBoxT = new QVBoxLayout(this);
+	vBoxT->addLayout(hBoxT1);
+	vBoxT->addLayout(hBoxT2);
+	vBoxT->addLayout(hBoxT3);
+	vBoxT->addLayout(hBoxT4);
+	transcodeSettings->setLayout(vBoxT);
 }
 
 void MainWidget::registHotKey() {

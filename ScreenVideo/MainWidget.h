@@ -1,14 +1,12 @@
 #ifndef SCREENVIDEO_H
 #define SCREENVIDEO_H
 
-#include "Video.h"
 #include <QtGui/QApplication>
 #include <QMainWindow>
 #include <qmessagebox.h>
 #include <qlabel.h>
 #include <qboxlayout.h>
 #include <qpushbutton.h>
-#include <Windows.h>
 #include <qsystemtrayicon.h>
 #include <qaction.h>
 #include <qtextcodec.h>
@@ -20,6 +18,10 @@
 #include <qlineedit.h>
 #include <qfiledialog.h>
 #include <qlist.h>
+#include <qradiobutton.h>
+#include <qprogressBar.h>
+#include "Video.h"
+#include "Transcode.h"
 
 class GlobelHotKeyApplication: public QApplication
 {
@@ -53,6 +55,7 @@ public:
 		registHotKey();
 
 		video = new Video();
+		transcode = new Transcode();
 		isStart = false;
 		connect(routeChangeButton, SIGNAL(clicked()), this, SLOT(changeRoute()));
 		connect(record, SIGNAL(clicked()), this, SLOT(startOrStop()));
@@ -65,10 +68,16 @@ public:
 		connect(maximizeAction, SIGNAL(triggered()), this, SLOT(showMaximized()));
 		connect(restoreAction, SIGNAL(triggered()), this, SLOT(showNormal()));
 		connect(quitAction, SIGNAL(triggered()), this, SLOT(quitApp()));
+		connect(srcRouteChange, SIGNAL(clicked()), this, SLOT(srcChangeFile()));
+		connect(dstRouteChange, SIGNAL(clicked()), this, SLOT(dstChangeFile()));
+		connect(transcodeStart, SIGNAL(clicked()), this, SLOT(startTranscode()));
+		connect(transcode, SIGNAL(progress(double)), this, SLOT(showProgress(double)));
 	}
 	~MainWidget() {
 		GlobalDeleteAtom(id);
 		UnregisterHotKey(this->winId(), id);
+		delete video;
+		delete transcode;
 	}
 
 	void closeEvent(QCloseEvent* e) {
@@ -79,37 +88,45 @@ public:
 		e->ignore();
 	}
 public slots:
+	void srcChangeFile() {
+		QString dir = QFileDialog::getOpenFileName(this, tr("Open Directory"), "/home", tr("Video (*.avi)"));
+		srcRoute->setText(dir);
+	}
+	void dstChangeFile() {
+		QString dir = QFileDialog::getSaveFileName(this, tr("Save File"), "/home", tr("Video (*.avi *.mp4)"));
+		dstRoute->setText(dir);
+	}
+	void startTranscode() {
+		progressBar->reset();
+		std::pair<int, int> rsl = resolutionList[resolution->currentIndex()];
+		transcode->setParameter(srcRoute->text(), dstRoute->text(), rsl.first, rsl.second);
+		transcode->wait();
+		transcode->start();
+	}
+	void showProgress(double ratio) {
+		progressBar->setValue((progressBar->maximum()-progressBar->minimum())*ratio + progressBar->minimum());
+	}
 	void changeRoute() {
 		QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home", QFileDialog::ShowDirsOnly|QFileDialog::DontResolveSymlinks);
 		route->setText(dir);
 	}
 	void videoStart() {
-		record->setText(tr("结束录制"));
-		isStart = true;
-		std::pair<int, int> rsl = resolutionList[resolution->currentIndex()];
-		video->setVideoSize(rsl.first, rsl.second);
 		video->setSaveRoute(route->text());
 		video->setAudioInfo(deviceList[audioDevice->currentIndex()]);
 		video->wait();
 		video->start();
+		isStart = true;
+		record->setText(tr("结束录制"));
 	}
 	void videoStop() {
-		record->setText(tr("开始录制"));
-		isStart = false;
 		video->stop();
 		video->wait();
+		isStart = false;
+		record->setText(tr("开始录制"));
 	}
 	void startOrStop() 
 	{
 		isStart? videoStop(): videoStart();
-		if(isStart == false)
-		{
-			//			/	system("E:\\ScreenVideo\\ScreenVideo\\ScreenVideo\\ffmpeg.exe -i E:\\ScreenVideo\\ScreenVideo\\ScreenVideo\\test.avi -i E:\\ScreenVideo\\ScreenVideo\\ScreenVideo\\test.wav -vcodec copy -acodec copy E:\\ScreenVideo\\ScreenVideo\\ScreenVideo\\output.avi");
-			//system("ffmpeg.exe -i test.avi -i test.wav -vcodec copy -acodec copy output.avi");
-			//QProcess *myProcess = new QProcess();
-			//myProcess->start(":/ScreenVideo/MyResources/ffmpeg.exe -i test.avi -i test.wav -vcodec copy -acodec copy output.avi");
-			//myProcess->start("ffmpeg.exe -i test.avi -i test.wav -vcodec copy -acodec copy output.avi");
-		}
 	}
 	void iconActivated(QSystemTrayIcon::ActivationReason reason) {
 		if (reason == QSystemTrayIcon::DoubleClick) {
@@ -130,6 +147,7 @@ private:
 	int id;
 	bool isStart;
 	Video* video;
+	Transcode* transcode;
 	QSystemTrayIcon *trayIcon;
 	QMenu *trayIconMenu; 
 	QAction *recordAction;
@@ -138,16 +156,22 @@ private:
 	QAction *restoreAction;
 	QAction *quitAction;
 	QTabWidget *tabWidget;
-	QWidget *baseSettings;
-	QWidget *advancedSettings;
+	QWidget *recordSettings;
+	QWidget *transcodeSettings;
 	QComboBox *resolution;
 	QComboBox *audioDevice;
 	QList<QAudioDeviceInfo> deviceList;
 	QList<std::pair<int, int>> resolutionList;
 	QLineEdit *route;
+	QLineEdit *srcRoute;
+	QLineEdit *dstRoute;
 	QPushButton* record;
 	QPushButton* quit;
 	QPushButton* routeChangeButton;
+	QPushButton* srcRouteChange;
+	QPushButton* dstRouteChange;
+	QPushButton* transcodeStart;
+	QProgressBar* progressBar;
 };
 
 #endif // SCREENVIDEO_H
