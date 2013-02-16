@@ -20,6 +20,7 @@
 #include <qlist.h>
 #include <qradiobutton.h>
 #include <qprogressBar.h>
+#include <qstring.h>
 #include "Video.h"
 #include "Transcode.h"
 
@@ -62,6 +63,7 @@ public:
 		connect(quit, SIGNAL(clicked()), this, SLOT(quitApp()));
 		connect(qApp, SIGNAL(hotKey(int, int)), this, SLOT(startOrStop()));
 		connect(video, SIGNAL(videoRestart()), this, SLOT(videoStart()));
+		connect(video, SIGNAL(outputFileName(const QString&)), this, SLOT(setTranscodeFile(const QString&)));
 		connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(iconActivated(QSystemTrayIcon::ActivationReason)));
 		connect(recordAction, SIGNAL(triggered()), this, SLOT(startOrStop()));
 		connect(minimizeAction, SIGNAL(triggered()), this, SLOT(hide()));
@@ -88,6 +90,13 @@ public:
 		e->ignore();
 	}
 public slots:
+	void setTranscodeFile(const QString& file) {
+		srcRoute->setText(file);
+		QString outputFile(file);
+		outputFile.chop(4);
+		outputFile.append(".mp4");
+		dstRoute->setText(outputFile);
+	}
 	void srcChangeFile() {
 		QString dir = QFileDialog::getOpenFileName(this, tr("Open Directory"), "/home", tr("Video (*.avi)"));
 		srcRoute->setText(dir);
@@ -112,7 +121,7 @@ public slots:
 	}
 	void videoStart() {
 		video->setSaveRoute(route->text());
-		video->setAudioInfo(deviceList[audioDevice->currentIndex()]);
+		video->setCamera(cameraDevice->currentIndex());
 		video->wait();
 		video->start();
 		isStart = true;
@@ -159,8 +168,7 @@ private:
 	QWidget *recordSettings;
 	QWidget *transcodeSettings;
 	QComboBox *resolution;
-	QComboBox *audioDevice;
-	QList<QAudioDeviceInfo> deviceList;
+	QComboBox *cameraDevice;
 	QList<std::pair<int, int>> resolutionList;
 	QLineEdit *route;
 	QLineEdit *srcRoute;

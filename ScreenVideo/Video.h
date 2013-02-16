@@ -51,6 +51,8 @@ class Video: public QThread
 
 private:
 	CCameraDS camera;
+	bool cameraOpen;
+	int CameraID;
 	Shot shot;
 	int count;
 	qint64 t1;
@@ -110,11 +112,9 @@ public:
 		fps = 30;
 		isStart = false;
 		restart = false;
+		cameraOpen = false;
 		screenWidth = QApplication::desktop()->width();
 		screenHeight = QApplication::desktop()->height();
-		if(!camera.OpenCamera(0, false, 320, 240)) {
-			qDebug()<<"Open camera error";
-		}
 
 		format.setFrequency(44100);
 		format.setChannels(2);
@@ -149,12 +149,15 @@ public:
 		QByteArray routeFull = (route+"\\"+dateTime).toLocal8Bit();
 		outFile = routeFull.data();
 		
-		for (int i = 0; i < 4; i++) {
-			cImg = camera.QueryFrame();
-			img = shot.shot();
-			delete img->imageData;
-			cvReleaseImageHeader(&img);
+		if(cameraOpen) {
+			camera.CloseCamera();
 		}
+		if(!camera.OpenCamera(CameraID, false, 320, 240)) {
+			qDebug()<<"Open camera error";
+		}
+		cameraOpen = true;
+		
+		cImg = camera.QueryFrame();
 
 		initialStream();
 		audioStart();
@@ -214,10 +217,10 @@ public:
 		writeAudioEnding();
 		releaseStream();
 		
-
 		t2 = QDateTime::currentMSecsSinceEpoch();
 		qDebug()<<t2 - t1 <<" "<< count;
 		if (restart) emit videoRestart();
+		emit outputFileName(QString(outFile));
 	}
 	void stop() {
 		isStart = false;
@@ -225,11 +228,12 @@ public:
 	void setSaveRoute(QString route) {
 		this->route = route;
 	}
-	void setAudioInfo(QAudioDeviceInfo deviceInfo) {
-		this->deviceInfo = deviceInfo;
+	void setCamera(int id) {
+		CameraID = id;
 	}
 signals:
 	void videoRestart();
+	void outputFileName(const QString&);
 };
 
 #endif //VIDEO_H

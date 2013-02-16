@@ -31,14 +31,17 @@ void MainWidget::interfaceInitial() {
 	tabWidget->addTab(recordSettings, tr("录像设置"));
 	tabWidget->addTab(transcodeSettings, tr("转码设置"));
 
-	QLabel* audioLabel = new QLabel(tr("录音设备:  "), this);
-	audioLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
-	audioDevice = new QComboBox(this);
-	deviceList = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
-	foreach(QAudioDeviceInfo deviceInfo, deviceList) {
-		audioDevice->addItem(deviceInfo.deviceName());
+	QLabel* cameraLabel = new QLabel(tr("摄像设备:  "), this);
+	cameraLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
+	cameraDevice = new QComboBox(this);
+	int number = CCameraDS::CameraCount();
+	for (int i = 0; i < number; i++) {
+		int nBufferSize = 100;
+		char* sName = new char[nBufferSize];
+		CCameraDS::CameraName(i, sName, nBufferSize);
+		cameraDevice->addItem(sName);
 	}
-	audioDevice->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
+	cameraDevice->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 
 	QLabel* routeLabel = new QLabel(tr("保存路径:  "), this);
 	routeLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
@@ -57,8 +60,8 @@ void MainWidget::interfaceInitial() {
 	quit->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
 	QHBoxLayout* hBox1 = new QHBoxLayout(this);
-	hBox1->addWidget(audioLabel);
-	hBox1->addWidget(audioDevice);
+	hBox1->addWidget(cameraLabel);
+	hBox1->addWidget(cameraDevice);
 	QHBoxLayout* hBox2 = new QHBoxLayout(this);
 	hBox2->addWidget(routeLabel);
 	hBox2->addWidget(route);

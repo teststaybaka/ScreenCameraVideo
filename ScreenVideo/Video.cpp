@@ -87,6 +87,7 @@ void Video::initialStream() {
 }
 
 void Video::audioStart() {
+	deviceInfo = QAudioDeviceInfo::defaultInputDevice();
 	if (!deviceInfo.isFormatSupported(format)) {
 		qWarning()<<"default format not supported try to use nearest";
 		format = deviceInfo.nearestFormat(format);
