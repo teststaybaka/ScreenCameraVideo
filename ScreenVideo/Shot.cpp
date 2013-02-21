@@ -47,7 +47,7 @@ void Shot::load() {
 
 		driverDC = CreateDC(deviceInfo.DeviceName, 0, 0, 0);
 		if (!driverDC) {
-			qDebug()<<"Can't create device context on mirror driver; devicName:"<<QString::fromWCharArray(deviceInfo.DeviceName);
+			qDebug()<<"Can't create device context on mirror driver; deviceName:"<<QString::fromWCharArray(deviceInfo.DeviceName);
 			return;
 		}
 		qDebug()<<"Device context is created";
@@ -126,7 +126,7 @@ void Shot::extractDeviceInfo(TCHAR *driverName) {
 	memset(&deviceInfo, 0, sizeof(deviceInfo));
 	deviceInfo.cb = sizeof(deviceInfo);
 
-	qDebug()<<"Searching for "<<driverName<<"...";
+	qDebug()<<"Searching for "<<QString::fromWCharArray(driverName)<<"...";
 
 	deviceNumber = 0;
 	bool result;

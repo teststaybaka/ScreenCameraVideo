@@ -18,6 +18,7 @@ extern "C" {
 
 #include <qthread.h>
 #include <qstring.h>
+#include <qdebug.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -84,8 +85,8 @@ public:
 		}
 		long int duration = iFormatCtx->duration;
 		int fps = iFormatCtx->streams[0]->time_base.den/iFormatCtx->streams[0]->time_base.num;
-		int frameCount = 0;
-		int totalFrame = duration*fps/1000000;
+		long long frameCount = 0;
+		long long totalFrame = duration/1000000*fps;
 
 		iCodecCtx = iFormatCtx->streams[0]->codec;
 		iCodec = avcodec_find_decoder(iCodecCtx->codec_id);
@@ -219,6 +220,7 @@ public:
 				if (packet.stream_index == 0) {
 					frameCount++;
 					emit progress((double)frameCount/totalFrame);
+					qDebug()<<(double)frameCount/totalFrame;
 
 					if (avcodec_decode_video2(iCodecCtx, frame, &got_picture, &packet) < 0) {
 						qDebug("Error while decoding\n");

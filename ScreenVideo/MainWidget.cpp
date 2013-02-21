@@ -6,11 +6,11 @@ void MainWidget::trayIconInitial() {
 	trayIcon = new QSystemTrayIcon(this);
 	//trayIcon->setIcon(icon);
 	trayIcon->setToolTip("Press ctrl+F2 to start/stop record.");
-	recordAction = new QAction(tr("开始录制/停止录制 (Ctrl+F2)"), this);
-	minimizeAction = new QAction(tr("最小化 (&I)"), this);
-	maximizeAction = new QAction(tr("最大化 (&X)"), this);
-	restoreAction = new QAction(tr("还原 (&R)"), this);
-	quitAction = new QAction(tr("退出 (&Q)"), this);
+	recordAction = new QAction(QString::fromLocal8Bit("开始录制/停止录制 (Ctrl+F2)"), this);
+	minimizeAction = new QAction(QString::fromLocal8Bit("最小化 (&I)"), this);
+	maximizeAction = new QAction(QString::fromLocal8Bit("最大化 (&X)"), this);
+	restoreAction = new QAction(QString::fromLocal8Bit("还原 (&R)"), this);
+	quitAction = new QAction(QString::fromLocal8Bit("退出 (&Q)"), this);
 	trayIconMenu = new QMenu(this);
 	trayIconMenu->addAction(recordAction);
 	trayIconMenu->addSeparator();
@@ -28,10 +28,10 @@ void MainWidget::interfaceInitial() {
 	setCentralWidget(tabWidget);
 	recordSettings = new QWidget(this);
 	transcodeSettings = new QWidget(this);
-	tabWidget->addTab(recordSettings, tr("录像设置"));
-	tabWidget->addTab(transcodeSettings, tr("转码设置"));
+	tabWidget->addTab(recordSettings, QString::fromLocal8Bit("录像设置"));
+	tabWidget->addTab(transcodeSettings, QString::fromLocal8Bit("转码设置"));
 
-	QLabel* cameraLabel = new QLabel(tr("摄像设备:  "), this);
+	QLabel* cameraLabel = new QLabel(QString::fromLocal8Bit("摄像设备:  "), this);
 	cameraLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
 	cameraDevice = new QComboBox(this);
 	int number = CCameraDS::CameraCount();
@@ -43,20 +43,20 @@ void MainWidget::interfaceInitial() {
 	}
 	cameraDevice->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 
-	QLabel* routeLabel = new QLabel(tr("保存路径:  "), this);
+	QLabel* routeLabel = new QLabel(QString::fromLocal8Bit("保存路径:  "), this);
 	routeLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
-	route = new QLineEdit(tr("movies"), this);
+	route = new QLineEdit(QString::fromLocal8Bit("movies"), this);
 	route->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 	route->setReadOnly(true);
-	routeChangeButton = new QPushButton(tr("更改"), this);
+	routeChangeButton = new QPushButton(QString::fromLocal8Bit("更改"), this);
 	routeChangeButton->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
 	QSpacerItem* spacer = new QSpacerItem(100, 10, QSizePolicy::Expanding, QSizePolicy::Preferred);
-	record = new QPushButton(tr("开始录制"), this);
+	record = new QPushButton(QString::fromLocal8Bit("开始录制"), this);
 	record->setAutoDefault(true);
 	record->setDefault(true);
 	record->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
-	quit = new QPushButton(tr("    退出    "), this);
+	quit = new QPushButton(QString::fromLocal8Bit("    退出    "), this);
 	quit->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
 	QHBoxLayout* hBox1 = new QHBoxLayout(this);
@@ -76,7 +76,7 @@ void MainWidget::interfaceInitial() {
 	vBox->addLayout(hBox3);
 	recordSettings->setLayout(vBox);
 
-	QLabel* resolutionLabel = new QLabel(tr("分辨率:    "), this);
+	QLabel* resolutionLabel = new QLabel(QString::fromLocal8Bit("分辨率:    "), this);
 	resolutionLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
 	resolution = new QComboBox(this);
 	resolutionList.append(std::make_pair(1024, 768));
@@ -87,25 +87,25 @@ void MainWidget::interfaceInitial() {
 	}
 	resolution->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 
-	QLabel* srcRouteLabel = new QLabel(tr("源文件:    "), this);
+	QLabel* srcRouteLabel = new QLabel(QString::fromLocal8Bit("源文件:    "), this);
 	srcRouteLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
 	srcRoute = new QLineEdit(this);
 	srcRoute->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 	srcRoute->setReadOnly(true);
-	srcRouteChange = new QPushButton(tr("更改"), this);
+	srcRouteChange = new QPushButton(QString::fromLocal8Bit("更改"), this);
 	srcRouteChange->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
-	QLabel* dstRouteLabel = new QLabel(tr("目标文件:  "), this);
+	QLabel* dstRouteLabel = new QLabel(QString::fromLocal8Bit("目标文件:  "), this);
 	dstRouteLabel->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
 	dstRoute = new QLineEdit(this);
 	dstRoute->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 	dstRoute->setReadOnly(true);
-	dstRouteChange = new QPushButton(tr("更改"), this);
+	dstRouteChange = new QPushButton(QString::fromLocal8Bit("更改"), this);
 	dstRouteChange->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
 	progressBar = new QProgressBar(this);
 	progressBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-	transcodeStart = new QPushButton(tr("开始转码"), this);
+	transcodeStart = new QPushButton(QString::fromLocal8Bit("开始转码"), this);
 	transcodeStart->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
 	QHBoxLayout* hBoxT1 = new QHBoxLayout(this);

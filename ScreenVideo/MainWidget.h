@@ -50,7 +50,7 @@ class MainWidget : public QMainWindow
 public:
 	MainWidget(QWidget *parent = 0, Qt::WFlags flags = 0):QMainWindow(parent, flags) 
 	{
-		QTextCodec::setCodecForTr(QTextCodec::codecForName("GB2312"));
+		//QTextCodec::setCodecForTr(QTextCodec::codecForName("GB2312"));
 		trayIconInitial();
 		interfaceInitial();
 		registHotKey();
@@ -84,7 +84,7 @@ public:
 
 	void closeEvent(QCloseEvent* e) {
 		this->hide();
-		QString titlec=tr("最小化");
+		QString titlec=QString::fromLocal8Bit("最小化");
 		QString textc=QString::fromLocal8Bit("使用Ctrl+F2开始或停止录制");
 		trayIcon->showMessage(titlec, textc, QSystemTrayIcon::Information, 5000);
 		e->ignore();
@@ -98,12 +98,12 @@ public slots:
 		dstRoute->setText(outputFile);
 	}
 	void srcChangeFile() {
-		QString dir = QFileDialog::getOpenFileName(this, tr("Open Directory"), "/home", tr("Video (*.avi)"));
-		srcRoute->setText(dir);
+		QString dir = QFileDialog::getOpenFileName(this, QString::fromLocal8Bit("Open Directory"), "/home", QString::fromLocal8Bit("Video (*.avi)"));
+		if (dir != "") srcRoute->setText(dir);
 	}
 	void dstChangeFile() {
-		QString dir = QFileDialog::getSaveFileName(this, tr("Save File"), "/home", tr("Video (*.avi *.mp4)"));
-		dstRoute->setText(dir);
+		QString dir = QFileDialog::getSaveFileName(this, QString::fromLocal8Bit("Save File"), "/home", QString::fromLocal8Bit("Video (*.avi *.mp4)"));
+		if (dir != "") dstRoute->setText(dir);
 	}
 	void startTranscode() {
 		progressBar->reset();
@@ -116,8 +116,8 @@ public slots:
 		progressBar->setValue((progressBar->maximum()-progressBar->minimum())*ratio + progressBar->minimum());
 	}
 	void changeRoute() {
-		QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home", QFileDialog::ShowDirsOnly|QFileDialog::DontResolveSymlinks);
-		route->setText(dir);
+		QString dir = QFileDialog::getExistingDirectory(this, QString::fromLocal8Bit("Open Directory"), "/home", QFileDialog::ShowDirsOnly|QFileDialog::DontResolveSymlinks);
+		if (dir != "") route->setText(dir);
 	}
 	void videoStart() {
 		video->setSaveRoute(route->text());
@@ -125,13 +125,13 @@ public slots:
 		video->wait();
 		video->start();
 		isStart = true;
-		record->setText(tr("结束录制"));
+		record->setText(QString::fromLocal8Bit("结束录制"));
 	}
 	void videoStop() {
 		video->stop();
 		video->wait();
 		isStart = false;
-		record->setText(tr("开始录制"));
+		record->setText(QString::fromLocal8Bit("开始录制"));
 	}
 	void startOrStop() 
 	{
