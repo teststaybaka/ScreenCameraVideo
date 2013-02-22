@@ -1,10 +1,11 @@
 #include "MainWidget.h"
 
 void MainWidget::trayIconInitial() {
-	//QIcon icon = QIcon(":/ScreenVideo/MyResources/icon.jpg");
 	//setWindowIcon(icon);
+	startIcon = new QIcon("startIcon.bmp");
+	stopIcon = new QIcon("stopIcon.bmp");
 	trayIcon = new QSystemTrayIcon(this);
-	//trayIcon->setIcon(icon);
+	trayIcon->setIcon(*startIcon);
 	trayIcon->setToolTip("Press ctrl+F2 to start/stop record.");
 	recordAction = new QAction(QString::fromLocal8Bit("开始录制/停止录制 (Ctrl+F2)"), this);
 	minimizeAction = new QAction(QString::fromLocal8Bit("最小化 (&I)"), this);

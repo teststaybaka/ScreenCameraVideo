@@ -59,7 +59,6 @@ public:
 	{
 		HWND hWnd;
 		HDC hSrcDC;
-		HDC hMemDC;
 		HBITMAP hBitmap;
 
 		hWnd = ::GetDesktopWindow();
@@ -67,7 +66,6 @@ public:
 		screenWidth = rect.right - rect.left;
 		screenHeight = rect.bottom - rect.top;
 		hSrcDC = ::GetWindowDC(hWnd);
-		hMemDC = ::CreateCompatibleDC(hSrcDC);
 		hBitmap = ::CreateCompatibleBitmap(hSrcDC, screenWidth, screenHeight);
 		::GetObject(hBitmap, sizeof(BITMAP), &bitmap);
 		nChannels = bitmap.bmBitsPixel/8;
@@ -97,8 +95,8 @@ public:
 	IplImage* shot() {
 		//qint64 t1 = QDateTime::currentMSecsSinceEpoch();
 
-		IplImage* img = cvCreateImageHeader(cvSize(screenWidth,screenHeight), depth, nChannels);   
-		BYTE *pBuffer = new BYTE[screenHeight*screenWidth*nChannels];   
+		IplImage* img = cvCreateImageHeader(cvSize(screenWidth,screenHeight), depth, nChannels);
+		BYTE *pBuffer = new BYTE[screenHeight*screenWidth*nChannels];
 		BYTE *bmBits = (BYTE*)screenBuffer;
 		BYTE *temp = pBuffer;
 		for (int i = 0; i < screenHeight; i++)

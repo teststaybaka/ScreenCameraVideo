@@ -167,11 +167,12 @@ public:
 		isStart = true;
 		t1 = QDateTime::currentMSecsSinceEpoch();
 		qDebug()<<"start";
+		emit videoHasStarted();
 		while (true) {
 			t2 = QDateTime::currentMSecsSinceEpoch();
 			if (t2 - t1 < 1000/fps*count) {
 				writeOneAudioFrame();
-				msleep(5);
+				msleep(1);
 				continue;
 			}
 			count++;
@@ -233,6 +234,7 @@ public:
 	}
 signals:
 	void videoRestart();
+	void videoHasStarted();
 	void outputFileName(const QString&);
 };
 

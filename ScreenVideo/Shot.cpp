@@ -91,7 +91,8 @@ void Shot::commitDisplayChanges(DEVMODE *pdm)
       return;
     }
 	qDebug()<<"CommitDisplayChanges(2): "<< QString::fromWCharArray(deviceInfo.DeviceName);
-    code = ChangeDisplaySettingsEx(deviceInfo.DeviceName, pdm, 0, 0, 0);
+    //code = ChangeDisplaySettingsEx(deviceInfo.DeviceName, pdm, 0, 0, 0);
+	code = ChangeDisplaySettingsEx(NULL, NULL, 0, 0, 0);
     if (code < 0) {
       qDebug("2nd ChangeDisplaySettingsEx() failed with code %d",
                      (int)code);

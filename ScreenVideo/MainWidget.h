@@ -48,7 +48,7 @@ class MainWidget : public QMainWindow
 	Q_OBJECT
 
 public:
-	MainWidget(QWidget *parent = 0, Qt::WFlags flags = 0):QMainWindow(parent, flags) 
+	MainWidget(QWidget *parent = 0, Qt::WFlags flags = 0):isStarting(0), isStart(0), QMainWindow(parent, flags) 
 	{
 		//QTextCodec::setCodecForTr(QTextCodec::codecForName("GB2312"));
 		trayIconInitial();
@@ -57,12 +57,12 @@ public:
 
 		video = new Video();
 		transcode = new Transcode();
-		isStart = false;
 		connect(routeChangeButton, SIGNAL(clicked()), this, SLOT(changeRoute()));
 		connect(record, SIGNAL(clicked()), this, SLOT(startOrStop()));
 		connect(quit, SIGNAL(clicked()), this, SLOT(quitApp()));
 		connect(qApp, SIGNAL(hotKey(int, int)), this, SLOT(startOrStop()));
-		connect(video, SIGNAL(videoRestart()), this, SLOT(videoStart()));
+		connect(video, SIGNAL(videoRestart()), this, SLOT(videoStarting()));
+		connect(video, SIGNAL(videoHasStarted()), this, SLOT(videoHasStarted()));
 		connect(video, SIGNAL(outputFileName(const QString&)), this, SLOT(setTranscodeFile(const QString&)));
 		connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(iconActivated(QSystemTrayIcon::ActivationReason)));
 		connect(recordAction, SIGNAL(triggered()), this, SLOT(startOrStop()));
@@ -119,23 +119,32 @@ public slots:
 		QString dir = QFileDialog::getExistingDirectory(this, QString::fromLocal8Bit("Open Directory"), "/home", QFileDialog::ShowDirsOnly|QFileDialog::DontResolveSymlinks);
 		if (dir != "") route->setText(dir);
 	}
-	void videoStart() {
+	void videoStarting() {
+		if (isStarting) return;
+		isStarting = true;
+		record->setEnabled(false);
 		video->setSaveRoute(route->text());
 		video->setCamera(cameraDevice->currentIndex());
 		video->wait();
 		video->start();
+	}
+	void videoHasStarted() {
 		isStart = true;
+		isStarting = false;
 		record->setText(QString::fromLocal8Bit("结束录制"));
+		trayIcon->setIcon(*stopIcon);
+		record->setEnabled(true);
 	}
 	void videoStop() {
 		video->stop();
 		video->wait();
 		isStart = false;
 		record->setText(QString::fromLocal8Bit("开始录制"));
+		trayIcon->setIcon(*startIcon);
 	}
 	void startOrStop() 
 	{
-		isStart? videoStop(): videoStart();
+		isStart? videoStop(): videoStarting();
 	}
 	void iconActivated(QSystemTrayIcon::ActivationReason reason) {
 		if (reason == QSystemTrayIcon::DoubleClick) {
@@ -155,6 +164,7 @@ private:
 
 	int id;
 	bool isStart;
+	bool isStarting;
 	Video* video;
 	Transcode* transcode;
 	QSystemTrayIcon *trayIcon;
@@ -180,6 +190,7 @@ private:
 	QPushButton* dstRouteChange;
 	QPushButton* transcodeStart;
 	QProgressBar* progressBar;
+	QIcon *startIcon, *stopIcon;
 };
 
 #endif // SCREENVIDEO_H
