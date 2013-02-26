@@ -7,11 +7,11 @@ void MainWidget::trayIconInitial() {
 	trayIcon = new QSystemTrayIcon(this);
 	trayIcon->setIcon(*startIcon);
 	trayIcon->setToolTip("Press ctrl+F2 to start/stop record.");
-	recordAction = new QAction(tr("开始录制/停止录制 (Ctrl+F2)"), this);
-	minimizeAction = new QAction(tr("最小化 (&I)"), this);
-	maximizeAction = new QAction(tr("最大化 (&X)"), this);
-	restoreAction = new QAction(tr("还原 (&R)"), this);
-	quitAction = new QAction(tr("退出 (&Q)"), this);
+	recordAction = new QAction(QString::fromLocal8Bit("开始录制/停止录制 (Ctrl+F2)"), this);
+	minimizeAction = new QAction(QString::fromLocal8Bit("最小化 (&I)"), this);
+	maximizeAction = new QAction(QString::fromLocal8Bit("最大化 (&X)"), this);
+	restoreAction = new QAction(QString::fromLocal8Bit("还原 (&R)"), this);
+	quitAction = new QAction(QString::fromLocal8Bit("退出 (&Q)"), this);
 	trayIconMenu = new QMenu(this);
 	trayIconMenu->addAction(recordAction);
 	trayIconMenu->addSeparator();
@@ -49,15 +49,15 @@ void MainWidget::interfaceInitial() {
 	route = new QLineEdit(tr("movies"), this);
 	route->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);
 	route->setReadOnly(true);
-	routeChangeButton = new QPushButton(tr("更改"), this);
+	routeChangeButton = new QPushButton(QString::fromLocal8Bit("更改"), this);
 	routeChangeButton->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
 	QSpacerItem* spacer = new QSpacerItem(100, 10, QSizePolicy::Expanding, QSizePolicy::Preferred);
-	record = new QPushButton(tr("开始录制"), this);
+	record = new QPushButton(QString::fromLocal8Bit("开始录制"), this);
 	record->setAutoDefault(true);
 	record->setDefault(true);
 	record->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
-	quit = new QPushButton(tr("    退出    "), this);
+	quit = new QPushButton(QString::fromLocal8Bit("    退出    "), this);
 	quit->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 
 	QHBoxLayout* hBox1 = new QHBoxLayout(this);

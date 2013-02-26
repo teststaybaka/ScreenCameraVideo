@@ -84,7 +84,7 @@ public:
 
 	void closeEvent(QCloseEvent* e) {
 		this->hide();
-		QString titlec=tr("最小化");
+		QString titlec=QString::fromLocal8Bit("最小化");
 		QString textc=tr("使用Ctrl+F2开始或停止录制");
 		trayIcon->showMessage(titlec, textc, QSystemTrayIcon::Information, 5000);
 		e->ignore();
