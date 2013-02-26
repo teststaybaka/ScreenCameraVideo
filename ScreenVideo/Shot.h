@@ -17,7 +17,6 @@
 #include <qdatetime.h>
 #include <qdebug.h>
 #include <qtimer.h>
-#include <portaudio.h>
 
 class Shot
 {

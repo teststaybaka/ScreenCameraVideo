@@ -51,13 +51,12 @@ public:
 	MainWidget(QWidget *parent = 0, Qt::WFlags flags = 0):isStarting(0), isStart(0), QMainWindow(parent, flags) 
 	{
 		QTextCodec::setCodecForTr(QTextCodec::codecForName("system"));
-		video = new Video();
-		transcode = new Transcode();
-
 		trayIconInitial();
 		interfaceInitial();
 		registHotKey();
 
+		video = new Video();
+		transcode = new Transcode();
 		connect(routeChangeButton, SIGNAL(clicked()), this, SLOT(changeRoute()));
 		connect(record, SIGNAL(clicked()), this, SLOT(startOrStop()));
 		connect(quit, SIGNAL(clicked()), this, SLOT(quitApp()));

@@ -42,6 +42,7 @@ extern "C" {
 #include <QtMultimedia/qaudioformat.h>
 #include <QtMultimedia/qaudiodeviceinfo.h>
 
+#define fourcc 1145656920
 #define fraction 4000
 
 class Video: public QThread
@@ -76,17 +77,14 @@ private:
 	AVStream *audioSt, *videoSt;
 	SwsContext *img_convert_ctx;
 	double audioPts, videoPts;
-	PaStream *stream;
-	PaStreamParameters inputParameters;
-	/*QAudioFormat format;
+	QAudioFormat format;
 	QAudioDeviceInfo deviceInfo;
 	QAudioInput* audioInput;
-	QIODevice* device;*/
+	QIODevice* device;
 	AVFifoBuffer *fifo;
 	uint8_t* samples;
 	int buffer_size;
-	int sizePerFrame;
-	//int actual_buffer_size;
+	int actual_buffer_size;
 	int got_output, got_packet;
 	int ret;
 
@@ -117,37 +115,6 @@ public:
 		cameraOpen = false;
 		screenWidth = QApplication::desktop()->width();
 		screenHeight = QApplication::desktop()->height();
-
-		PaError err = Pa_Initialize();
-		qDebug(  "PortAudio error: %s\n", Pa_GetErrorText( err ) );
-
-		int numDevices;
-		numDevices = Pa_GetDeviceCount();
-		if( numDevices < 0 )
-		{
-			printf( "ERROR: Pa_CountDevices returned 0x%x\n", numDevices );
-			err = numDevices;
-		}
-		const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(1);
-		inputParameters.device = 1;
-		inputParameters.channelCount = 2;
-		inputParameters.sampleFormat = paInt16;
-		inputParameters.suggestedLatency = deviceInfo->defaultLowInputLatency;
-		inputParameters.hostApiSpecificStreamInfo = 0;
-		sizePerFrame = Pa_GetSampleSize(inputParameters.sampleFormat);
-		err = Pa_OpenStream(&stream, &inputParameters, 0, 44100, buffer_size/sizePerFrame, paNoFlag, 0, 0);
-		for(int i=0; i<numDevices; i++ )
-		{
-			deviceInfo = Pa_GetDeviceInfo( i );
-			qDebug()<<"audio device name:"<<tr(deviceInfo->name)<<" "<<deviceInfo->maxInputChannels<<" "<<deviceInfo->maxOutputChannels;
-		}
-
-		/*format.setFrequency(44100);
-		format.setChannels(2);
-		format.setSampleSize(16);
-		format.setCodec("audio/pcm");
-		format.setByteOrder(QAudioFormat::LittleEndian);
-		format.setSampleType(QAudioFormat::SignedInt);*/
 		
 		//initial ffmpeg
 		av_register_all();
@@ -166,10 +133,6 @@ public:
 		}
 	}
 	~Video() {
-		PaError err = Pa_Terminate();
-		if( err != paNoError )
-		   qDebug(  "PortAudio error: %s\n", Pa_GetErrorText( err ) );
-
 		av_fifo_free(fifo);
 		av_free(img_convert_ctx);
 	}
