@@ -1,5 +1,4 @@
 #include "Shot.h"
-#ifdef USE_Dfmirage
 
 const TCHAR Shot::MINIPORT_REGISTRY_PATH[] =
   _T("SYSTEM\\CurrentControlSet\\Hardware Profiles\\")
@@ -48,7 +47,7 @@ void Shot::load() {
 
 		driverDC = CreateDC(deviceInfo.DeviceName, 0, 0, 0);
 		if (!driverDC) {
-			qDebug()<<"Can't create device context on mirror driver; devicName:"<<QString::fromWCharArray(deviceInfo.DeviceName);
+			qDebug()<<"Can't create device context on mirror driver; deviceName:"<<QString::fromWCharArray(deviceInfo.DeviceName);
 			return;
 		}
 		qDebug()<<"Device context is created";
@@ -92,7 +91,8 @@ void Shot::commitDisplayChanges(DEVMODE *pdm)
       return;
     }
 	qDebug()<<"CommitDisplayChanges(2): "<< QString::fromWCharArray(deviceInfo.DeviceName);
-    code = ChangeDisplaySettingsEx(deviceInfo.DeviceName, pdm, 0, 0, 0);
+    //code = ChangeDisplaySettingsEx(deviceInfo.DeviceName, pdm, 0, 0, 0);
+	code = ChangeDisplaySettingsEx(NULL, NULL, 0, 0, 0);
     if (code < 0) {
       qDebug("2nd ChangeDisplaySettingsEx() failed with code %d",
                      (int)code);
@@ -127,7 +127,7 @@ void Shot::extractDeviceInfo(TCHAR *driverName) {
 	memset(&deviceInfo, 0, sizeof(deviceInfo));
 	deviceInfo.cb = sizeof(deviceInfo);
 
-	qDebug()<<"Searching for "<<driverName<<"...";
+	qDebug()<<"Searching for "<<QString::fromWCharArray(driverName)<<"...";
 
 	deviceNumber = 0;
 	bool result;
@@ -174,15 +174,15 @@ void Shot::openDeviceRegKey(TCHAR *miniportName)
 
 void Shot::dispose()
 {
-  if (isDriverConnected) {
-    disconnect();
-  }
-  if (isDriverLoaded) {
-    unload();
-  }
-  if (isDriverOpened) {
-    close();
-  }
+	if (isDriverConnected) {
+		disconnect();
+	}
+	if (isDriverLoaded) {
+		unload();
+	}
+	if (isDriverOpened) {
+		close();
+	}
 }
 
 void Shot::disconnect() {
@@ -197,7 +197,7 @@ void Shot::disconnect() {
 			qDebug()<<"Can't unmap buffer: error code = "<<res;
 			return;
 		}
-			isDriverConnected = false;
+		isDriverConnected = false;
 	}
 }
 
@@ -219,5 +219,3 @@ void Shot::close() {
 	regkeyDevice.close();
 	isDriverOpened = false;
 }
-
-#endif
